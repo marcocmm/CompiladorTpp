@@ -1,7 +1,6 @@
 from llvmlite import ir
 
 from analiseSemanticaTpp import *
-from analiseSintaticaTpp import *
 from sys import exit
 #from llvm.ee import ExecutionEngine
 #from llvm.passes import (FunctionPassManager, PASS_INSTCOMBINE, PASS_GVN, PASS_REASSOCIATE, PASS_SIMPLIFYCFG, PASS_MEM2REG)
@@ -98,10 +97,10 @@ class Gen:
 			self.gen_chamada_funcao(node.child[0])
 		#elif node.child[0].type == "repita":
 			#self.gen_repita(node.child[0])
-		#elif node.child[0].type == "condicao":
-			#self.gen_condicao(node.child[0])
-		#elif node.child[0].type == "retorna":expressao
-			#self.gen_retorna(node.child[0])
+		elif node.child[0].type == "condicao":
+			self.gen_condicao(node.child[0])
+		elif node.child[0].type == "retorna": 
+			self.gen_retorna(node.child[0])
 
 	def gen_atribuicao(self, node):
 		res = self.gen_expressao(node.child[0])
@@ -139,7 +138,6 @@ class Gen:
 		exp1 = self.gen_expressao(node.child[0])
 
 		exp2 = self.gen_expressao(node.child[1])
-		print(exp2)
 
 		if node.value == "+":
 			res = self.builder.fadd(exp1, exp2, name='add')
@@ -149,8 +147,6 @@ class Gen:
 			res = self.builder.fmul(exp1, exp2, name='mult')
 		elif node.value == "/":
 			res = self.builder.fdiv(exp1, exp2, name='div')
-
-
 		return res
 
 	def gen_expressao_unaria(self, node):
@@ -160,19 +156,38 @@ class Gen:
 		else:
 			return self.builder.fmul(res, ir.Constant(ir.IntType(32), -1), name='mult')
 
-	def gen_chamda_funcao(self, node):
+	def gen_expressao_logica(self, node):
+		exp1 = self.gen_expressao(node.child[0])
+
+		exp2 = self.gen_expressao(node.child[1])
+
+		if node.value == "+":
+			res = self.builder.fadd(exp1, exp2, name='add')
+		elif node.value == "-":
+			res = self.builder.fsub(exp1, exp2, name='sub')
+		elif node.value == "*":
+			res = self.builder.fmul(exp1, exp2, name='mult')
+		
+
+	def gen_retorna(self, node):
+		res = self.gen_expressao(node.child[0])
+		self.builder.ret(res)
 
 
-		real_args = self.simbolos["global."+node.value][2]
+	def gen_chamada_funcao(self, node):
+		func = self.builder.load(self.simbolos["global."+self.escopo][4])
+		lista_args = self.gen_argumentos_chamada_funcao(node.child[0], ())
+		self.builder.call(func,lista_args,name="call")
 
-		lista_args = self.argumentos_chamada(node.child[0], [])
-		self.simbolos["global."+node.value][3] = "atribuido"
-
-	def gen_argumentos_chamda_funcao(self, node):
-		pass
-		lista_args.append(self.expressao(node.child[0],""))
+	def gen_argumentos_chamada_funcao(self, node, lista_args):
+		lista_args = lista_args + (self.gen_expressao(node.child[0]), )
 		if len(node.child) == 2:
-			lista_args = self.argumentos_chamada(node.child[1], lista_args)
+			lista_args = self.gen_argumentos_chamada_funcao(node.child[1], lista_args)
+		return lista_args
+
+	def gen_condicao(self, node):
+		res = self.gen_expressao_logica(node.child[0])
+		return tipo_exp
 
 	def gen_block(self):
 		block = self.func.append_basic_block('entry')

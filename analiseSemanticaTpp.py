@@ -60,7 +60,7 @@ class Semantica:
 			self.escopo = node.value
 			tipo_func = self.tipo(node.child[0])
 			lista_tipos = self.argumentos(node.child[1], [])
-			self.corpo(node.child[2])      
+			self.corpo(node.child[2], tipo_func)      
 			self.escopo = "global"
 			self.simbolos[self.escopo+"."+node.value] = ['funcao', tipo_func, lista_tipos, "nao_atribuido"]
 			if node.value == "principal":
@@ -84,14 +84,14 @@ class Semantica:
 
 		return lista_tipos
 
-	def corpo(self, node):
+	def corpo(self, node, tipo_func):
 		if node == None:
 			return
-		self.corpo(node.child[0])
-		self.detalhamento(node.child[1])
+		self.corpo(node.child[0], tipo_func)
+		self.detalhamento(node.child[1], tipo_func)
 
 
-	def detalhamento(self, node):
+	def detalhamento(self, node, tipo_func):
 		if node.child[0].type == "atribuicao":
 			self.atribuicao(node.child[0])
 		elif node.child[0].type == "leia":
@@ -107,7 +107,7 @@ class Semantica:
 		elif node.child[0].type == "condicao":
 			self.condicao(node.child[0])
 		elif node.child[0].type == "retorna":
-			self.retorna(node.child[0])
+			self.retorna(node.child[0], tipo_func)
 
 	def atribuicao(self,node):
 		if (self.escopo+"."+node.value in self.simbolos.keys()):
@@ -174,17 +174,24 @@ class Semantica:
 
 	def repita(self, node):
 		self.corpo(node.child[0])
-		self.expressao_logica(node.child[1],"")
+		self.expressao_condicao(node.child[1],"")
 	
 
 	def condicao(self, node):
-		self.expressao_logica(node.child[0],"")
-		self.corpo(node.child[1])
+		self.expressao_condicao(node.child[0],"")
+		self.corpo(node.child[1],None)
 		if len(node.child) == 3:
-			self.corpo(node.child[2])
+			self.corpo(node.child[2], None)
 
-	def retorna(self, node):
-		self.expressao(node.child[0],"")
+	def retorna(self, node, tipo_func):
+		tipo = self.expressao(node.child[0],"")
+		if tipo == "warning":
+			print(
+			"Warning Semantico. Retorno da funcao  recebe uma expressao que contém tipo_flutuante e tipo_inteiro")
+		elif tipo_func != tipo:
+			print(
+			"Warning Semantico. Retorno da funcao  recebe um valor do tipo "+ tipo +"diferente do esperado")
+
 
 
 	'''
@@ -251,25 +258,17 @@ class Semantica:
 			lista_args = self.argumentos_chamada(node.child[1], lista_args)
 		return lista_args
 
-	def expressao_logica(self, node, tipo_exp):
-		tipo = self.expressao_condicao(node.child[0], tipo_exp)
-		tipo_exp = self.valida_tipo(tipo, tipo_exp)
-		tipo = self.expressao_condicao(node.child[1], tipo_exp)
+	def expressao_condicao(self, node, tipo_exp):
+		tipo = self.expressao_logica(node.child[0], tipo_exp)
 		tipo_exp = self.valida_tipo(tipo, tipo_exp)
 		return tipo_exp
 
-	def expressao_condicao(self, node, tipo_exp):
-		if node.child[0].type == "expressao_condicao":
-			tipo = self.expressao_condicao(node.child[0], tipo_exp)
-			tipo_exp = self.valida_tipo(tipo, tipo_exp)
-		elif node.child[0].type == "expressao":
-			tipo = self.expressao_condicao(node.child[0], tipo_exp)
-			tipo_exp = self.valida_tipo(tipo, tipo_exp)
-		elif node.child[0].type == "expressao_logica":
-			tipo = self.expressao_logica(node.child[0], tipo_exp)
-			tipo_exp = self.valida_tipo(tipo, tipo_exp)
-
-		return tipo_exp	
+	def expressao_logica(self, node, tipo_exp):
+		tipo = self.expressao(node.child[0], tipo_exp)
+		tipo_exp = self.valida_tipo(tipo, tipo_exp)
+		tipo = self.expressao(node.child[1], tipo_exp)
+		tipo_exp = self.valida_tipo(tipo, tipo_exp)
+		return tipo_exp
 
 	def expressao_normal(self, node, tipo_exp):
 		tipo = self.expressao(node.child[0], tipo_exp)

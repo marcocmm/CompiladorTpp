@@ -9,7 +9,7 @@
 # Autor: Marco Cezar Moreira de Mattos
 
 from ply import yacc
-from analiseLexicaTpp import Lexer
+from analiselexicaTpp import Lexer
 
 class Tree:
 
@@ -127,11 +127,11 @@ class Parser:
 		p[0] = Tree('atribuicao', [p[3]], p[1])
 
 	def p_condicao_1(self, p):
-		'condicao : SE expressao_logica ENTAO corpo FIM'
+		'condicao : SE expressao_condicao ENTAO corpo FIM'
 		p[0] = Tree('condicao', [p[2], p[4]])
 
 	def p_condicao_2(self, p):
-		'condicao : SE expressao_logica ENTAO corpo SENAO corpo FIM'
+		'condicao : SE expressao_condicao ENTAO corpo SENAO corpo FIM'
 		p[0] = Tree('condicao', [p[2], p[4], p[6]])
 
 	def p_num_int(self, p):
@@ -149,24 +149,23 @@ class Parser:
 
 	def p_expressao_condicao_1(self, p):
 		'''
-		expressao_condicao : expressao
-				  		   | expressao_logica
-		'''
-		p[0] = Tree('expressao_condicao', [p[1]])
-
-	def p_expressao_condicao_2(self, p):
-		'''
-		expressao_condicao : APAR expressao_condicao FPAR
+		expressao_condicao : APAR expressao_logica FPAR
 		'''
 		p[0] = Tree('expressao_condicao', [p[2]])
 
-	def p_expressao_logica(self, p):
+	def p_expressao_condicao_2(self, p):
 		'''
-		expressao_logica : expressao_condicao EQ expressao_condicao
-						 | expressao_condicao MAIOR expressao_condicao
-						 | expressao_condicao MENOR expressao_condicao
-						 | expressao_condicao MAIOREQ expressao_condicao
-						 | expressao_condicao MENOREQ expressao_condicao
+		expressao_condicao : expressao_logica
+		'''
+		p[0] = Tree('expressao_condicao', [p[1]])
+
+	def p_expressao_logica_2(self, p):
+		'''
+		expressao_logica : expressao EQ expressao
+						 | expressao MAIOR expressao
+						 | expressao MENOR expressao
+						 | expressao MAIOREQ expressao
+						 | expressao MENOREQ expressao
 		'''
 		p[0] = Tree('expressao_logica', [p[1], p[3]], p[2])
 
