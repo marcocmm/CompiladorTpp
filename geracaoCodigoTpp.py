@@ -69,19 +69,18 @@ class Gen:
 				args_type = args_type + (self.get_tipo(a),)
 
 			tipo_func = ir.FunctionType(return_type,args_type)
-			func = ir.Function(self.module,tipo_func,node.value)
-			self.simbolos["global."+node.value].append(func)
-			bb = func.append_basic_block('entry')
+			self.func = ir.Function(self.module,tipo_func,node.value)
+			self.simbolos["global."+node.value].append(self.func)
+			bb = self.func.append_basic_block('entry')
 			self.builder = ir.IRBuilder(bb)
-			self.gen_corpo_funcao(node.child[2])
-
+			self.gen_corpo(node.child[2])
 			self.escopo = "global"
 
 
-	def gen_corpo_funcao(self,node):
+	def gen_corpo(self,node):
 		if node == None:
 			return
-		self.gen_corpo_funcao(node.child[0])
+		self.gen_corpo(node.child[0])
 		self.gen_detalhamento_funcao(node.child[1])
 
 	def gen_detalhamento_funcao(self, node):
@@ -95,8 +94,8 @@ class Gen:
 			self.gen_declaracao_variavel(node.child[0])
 		elif node.child[0].type == "chamada":
 			self.gen_chamada_funcao(node.child[0])
-		#elif node.child[0].type == "repita":
-			#self.gen_repita(node.child[0])
+		elif node.child[0].type == "repita":
+			self.gen_repita(node.child[0])
 		elif node.child[0].type == "condicao":
 			self.gen_condicao(node.child[0])
 		elif node.child[0].type == "retorna": 
@@ -157,17 +156,17 @@ class Gen:
 			return self.builder.fmul(res, ir.Constant(ir.IntType(32), -1), name='mult')
 
 	def gen_expressao_logica(self, node):
+		print(node)
+		node = node.child[0]
 		exp1 = self.gen_expressao(node.child[0])
 
 		exp2 = self.gen_expressao(node.child[1])
 
 		if node.value == "+":
-			res = self.builder.fadd(exp1, exp2, name='add')
-		elif node.value == "-":
-			res = self.builder.fsub(exp1, exp2, name='sub')
-		elif node.value == "*":
-			res = self.builder.fmul(exp1, exp2, name='mult')
-		
+			res = self.builder.icmp_signed(node.value, exp1, exp2, 'cmptmp')
+		else:
+			res = self.builder.icmp_signed(node.value, exp1, exp2, 'cmptmp')
+		return res
 
 	def gen_retorna(self, node):
 		res = self.gen_expressao(node.child[0])
@@ -186,12 +185,35 @@ class Gen:
 		return lista_args
 
 	def gen_condicao(self, node):
-		res = self.gen_expressao_logica(node.child[0])
-		return tipo_exp
+		cond = self.gen_expressao_logica(node.child[0])
+		then_if = self.func.append_basic_block('then_if')
+		if (len(node.child)== 3): 
+			else_if = self.func.append_basic_block('else_if')
+		end_if = self.func.append_basic_block('end_if')
+		if (len(node.child)==3):
+			self.builder.cbranch(cond, then_if, else_if)
+		else:
+			self.builder.cbranch(cond, then_if, end_if)
+		self.builder.position_at_start(then_if)
+		
+		self.gen_corpo(node.child[1])
+		self.builder.branch(end_if)
+		if (len(node.child)==3):
+			self.builder.position_at_start(else_if)
+			self.gen_corpo(node.child[2])
+			self.builder.branch(end_if)
+		self.builder.position_at_start(end_if)
 
-	def gen_block(self):
-		block = self.func.append_basic_block('entry')
-		self.builder = ir.IRBuilder(block)
+	def gen_repita(self, node):
+		repeat = self.func.append_basic_block('repeat')
+		end_repeat = self.func.append_basic_block('end_repeat')
+		self.builder.branch(repeat)
+		self.builder.position_at_start(repeat)
+		self.gen_corpo(node.child[0])
+		cond = self.gen_expressao_logica(node.child[1])
+		self.builder.cbranch(cond, end_repeat, repeat)
+		self.builder.position_at_start(end_repeat)
+
 
 	def get_tipo(self, tipo):
 		if(tipo == "tipo_inteiro"):

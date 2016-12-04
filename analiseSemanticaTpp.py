@@ -173,7 +173,7 @@ class Semantica:
 
 
 	def repita(self, node):
-		self.corpo(node.child[0])
+		self.corpo(node.child[0], None)
 		self.expressao_condicao(node.child[1],"")
 	
 

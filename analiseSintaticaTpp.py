@@ -221,7 +221,7 @@ class Parser:
 
 
 	def p_repita(self, p):
-		'repita : REPITA corpo ATE expressao_logica'
+		'repita : REPITA corpo ATE expressao_condicao'
 		p[0] = Tree('repita', [p[2], p[4]])
 
 
