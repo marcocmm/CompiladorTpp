@@ -94,8 +94,6 @@ class Semantica:
 	def detalhamento(self, node, tipo_func):
 		if node.child[0].type == "atribuicao":
 			self.atribuicao(node.child[0])
-		elif node.child[0].type == "leia":
-			self.leia(node.child[0])
 		elif node.child[0].type == "escreva":
 			self.escreva(node.child[0])
 		elif node.child[0].type == "declaracao":
@@ -143,11 +141,8 @@ class Semantica:
 			exit(1)
 
 
-	def leia(self, node):
-		self.argumentos_chamada(node.child[0], [])
-
 	def escreva(self, node):
-		self.argumentos_chamada(node.child[0], [])
+		self.expressao(node.child[0], "")
 
 	def chamada(self, node):
 
@@ -173,8 +168,8 @@ class Semantica:
 
 
 	def repita(self, node):
-		self.corpo(node.child[0], None)
 		self.expressao_condicao(node.child[1],"")
+		self.corpo(node.child[0], None)
 	
 
 	def condicao(self, node):

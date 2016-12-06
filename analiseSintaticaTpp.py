@@ -97,12 +97,12 @@ class Parser:
 		p[0] = Tree('chamada', [p[3]], p[1])
 
 	def p_leia(self, p):
-		'leia : LEIA APAR argumentos_chamada FPAR'
+		'leia : LEIA APAR FPAR'
 
-		p[0] = Tree('leia', [p[3]], p[1])
+		p[0] = Tree('leia', [], p[1])
 
 	def p_escreva(self, p):
-		'escreva : ESCREVA APAR argumentos_chamada FPAR'
+		'escreva : ESCREVA APAR expressao FPAR'
 		
 		p[0] = Tree('escreva', [p[3]], p[1])
 
@@ -159,7 +159,7 @@ class Parser:
 		'''
 		p[0] = Tree('expressao_condicao', [p[1]])
 
-	def p_expressao_logica_2(self, p):
+	def p_expressao_logica(self, p):
 		'''
 		expressao_logica : expressao EQ expressao
 						 | expressao MAIOR expressao
